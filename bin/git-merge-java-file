@@ -1,0 +1,45 @@
+#!/bin/bash
+
+MERGE_FAILED=0
+
+git merge-one-file "$1" "$2" "$3" "$4" "$5" "$6" "$7" || MERGE_FAILED=1
+
+READING_CONFLICT=0
+case "$MERGE_FAILED" in
+1)
+	echo $4 | grep -q "\.java" || exit 1
+	
+	tmpFile=`mktemp -t octopus-java-conflicts-resolutionXXXX`
+
+	while IFS='' read -r line ; do
+    	
+    	echo "$line" | grep '^<<<<<<<' 1> /dev/null && READING_CONFLICT=1
+
+    	if [ $READING_CONFLICT -eq 1 ]; then
+    		READING_IMPORT=0
+    		READING_CONFLICT_SYNTAX=0
+    		echo "$line" | grep -e '^import' -e '^ *$' 1> /dev/null && READING_IMPORT=1
+    		echo "$line" | grep -e '^<<<<<<<' -e '^=======' -e '^>>>>>>>' 1> /dev/null && READING_CONFLICT_SYNTAX=1
+
+    		if [ $READING_IMPORT -eq 1 ] ; then
+    			echo "$line" >> $tmpFile
+    		fi
+
+    		if [ $READING_IMPORT -eq 0 ] && [ $READING_CONFLICT_SYNTAX -eq 0 ] ; then
+    			exit 1
+    		fi
+    	else
+    		echo "$line" >> $tmpFile
+    	fi
+		
+		echo "$line" | grep '^>>>>>>>' 1> /dev/null && READING_CONFLICT=0
+	done < $4
+	
+	cat $tmpFile > $4
+	git update-index --add -- $4
+
+	echo "Java merge succeded on $4"
+	MERGE_FAILED=0
+esac
+
+exit $MERGE_FAILED

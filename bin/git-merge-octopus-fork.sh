@@ -5,6 +5,9 @@
 # Resolve two or more trees.
 #
 
+mergeProgram=$(git config octopus.mergeProgram)
+mergeProgram=${mergeProgram:-git-merge-one-file}
+
 LF='
 '
 
@@ -32,14 +35,6 @@ do
 		;;
 	esac
 done
-
-# Reject if this is not an Octopus -- resolve should be used instead.
-case "$remotes" in
-?*' '?*)
-	;;
-*)
-	exit 2 ;;
-esac
 
 # MRC is the current "merge reference commit"
 # MRT is the current "merge result tree"
@@ -97,7 +92,7 @@ do
 	if test $? -ne 0
 	then
 		echo "Simple merge did not work, trying automatic merge."
-		git-merge-index -o git-merge-one-file -a ||
+		git-merge-index -o $mergeProgram -a ||
 		OCTOPUS_FAILURE=1
 		next=$(git write-tree 2>/dev/null)
 	fi
