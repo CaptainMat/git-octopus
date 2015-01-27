@@ -11,7 +11,7 @@ READING_CONFLICT=0
 case "$MERGE_FAILED" in
 1)
 	
-	tmpFile=`mktemp -t octopus-java-conflicts-resolutionXXXX`
+	tmpFile=
 
     intentMergeLines=
 
@@ -21,7 +21,7 @@ case "$MERGE_FAILED" in
 
     	if [ $READING_CONFLICT -eq 1 ]; then
     		RESOLVABLE_LINE=0
-    		echo "$line" | grep -e '^import' -e '^ *$' 1> /dev/null && echo "$line" >> $tmpFile && RESOLVABLE_LINE=1
+    		echo "$line" | grep -e '^import' -e '^ *$' 1> /dev/null && tmpFile+="$line$LF" && RESOLVABLE_LINE=1
             echo "$line" | grep -e 'intent-merge:' 1> /dev/null && intentMergeLines+="`echo "$line" | awk -F":" '{print $NF,$0}'`$LF" && RESOLVABLE_LINE=1
     		echo "$line" | grep -e '^<<<<<<<' -e '^=======' -e '^>>>>>>>' 1> /dev/null && RESOLVABLE_LINE=1
 
@@ -30,18 +30,18 @@ case "$MERGE_FAILED" in
     		fi
     	else
             if [[ $intentMergeLines ]] ; then
-                echo "$intentMergeLines" | sort -n | cut -f2- -d " "  >> $tmpFile
+                tmpFile+=`"$intentMergeLines" | sort -n | cut -f2- -d " "`"$LF"
                 intentMergeLines=
             fi
             
-            echo "$line" >> $tmpFile
+            tmpFile+="$line$LF"
             
     	fi
 		
 		echo "$line" | grep '^>>>>>>>' 1> /dev/null && READING_CONFLICT=0
 	done < $4
 	
-	cat $tmpFile > $4
+	echo $tmpFile > $4
 	git update-index --add -- $4
 
 	echo "Java merge succeded on $4"
