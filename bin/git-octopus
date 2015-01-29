@@ -96,6 +96,11 @@ do
     fi
 done
 
+if [ -z $sha1s ] ; then
+    echo "OCTOPUS SUCCESS"
+    exit 0;
+fi
+
 git-merge-octopus-fork.sh $mergeBases -- HEAD $sha1s
 
 if [ $? -eq 0 ]
