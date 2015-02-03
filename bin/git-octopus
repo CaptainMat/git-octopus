@@ -96,7 +96,7 @@ do
     fi
 done
 
-if [ -z $sha1s ] ; then
+if [ -z "$sha1s" ] ; then
     echo "OCTOPUS SUCCESS"
     exit 0;
 fi
